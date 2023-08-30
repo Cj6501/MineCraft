@@ -1,0 +1,85 @@
+import pygame
+import noise
+
+# Constants for the screen size
+SCREEN_WIDTH = 800
+SCREEN_HEIGHT = 600
+
+# Constants for block size
+BLOCK_SIZE = 40
+
+# Colors for textures
+GRASS_COLOR = (0, 255, 0)    # Green
+STONE_COLOR = (128, 128, 128)  # Gray
+WATER_COLOR = (0, 0, 255)    # Blue
+WOOD_COLOR = (139, 69, 19)   # Brown
+
+# Function to generate terrain using Perlin noise
+def generate_terrain(width, height):
+    terrain = [[None for _ in range(width)] for _ in range(height)]
+    scale = 20.0  # Adjust the scale to control terrain roughness
+    for y in range(height):
+        for x in range(width):
+            value = noise.pnoise2(x / scale, y / scale)
+            if value < -0.1:
+                terrain[y][x] = WATER_COLOR
+            elif value < 0.1:
+                terrain[y][x] = GRASS_COLOR
+            else:
+                terrain[y][x] = STONE_COLOR
+    return terrain
+
+# Generate initial terrain
+world = generate_terrain(SCREEN_WIDTH // BLOCK_SIZE, SCREEN_HEIGHT // BLOCK_SIZE)
+
+# Initialize player position
+player_row, player_col = 0, 0
+
+# Initialize pygame
+pygame.init()
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+pygame.display.set_caption("Minecraft-like")
+
+clock = pygame.time.Clock()
+
+# Main game loop
+running = True
+while running:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+
+    # Handle player movement
+    keys = pygame.key.get_pressed()
+    if keys[pygame.K_LEFT]:
+        player_col = max(0, player_col - 1)
+    if keys[pygame.K_RIGHT]:
+        player_col = min(len(world[0]) - 1, player_col + 1)
+    if keys[pygame.K_UP]:
+        player_row = max(0, player_row - 1)
+    if keys[pygame.K_DOWN]:
+        player_row = min(len(world) - 1, player_row + 1)
+
+    # Clear the screen
+    screen.fill((0, 0, 0))
+
+    # Draw the world with player character
+    for row in range(len(world)):
+        for col in range(len(world[0])):
+            if (row, col) == (player_row, player_col):
+                color = (255, 0, 0)  # Red for player
+            else:
+                color = world[row][col] if world[row][col] is not None else (0, 0, 0)  # Default black color
+            pygame.draw.rect(screen, color, pygame.Rect(col * BLOCK_SIZE, row * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE))
+            pygame.draw.rect(screen, (0, 0, 0), pygame.Rect(col * BLOCK_SIZE, row * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE), 1)
+
+    # Draw grid lines
+    for row in range(len(world)):
+        for col in range(len(world[0])):
+            pygame.draw.rect(screen, (0, 0, 0), pygame.Rect(col * BLOCK_SIZE, row * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE), 1)
+
+    # Update the display
+    pygame.display.flip()
+    clock.tick(60)
+
+pygame.quit()
